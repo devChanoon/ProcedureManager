@@ -44,6 +44,7 @@
             groupBox2 = new GroupBox();
             tb_ProcedureContent = new TextBox();
             tableLayoutPanel1 = new TableLayoutPanel();
+            btn_OpenBackupFolder = new Button();
             btn_ExecOtherServer = new Button();
             label5 = new Label();
             btn_ExecThisServer = new Button();
@@ -228,29 +229,43 @@
             // 
             // tableLayoutPanel1
             // 
-            tableLayoutPanel1.ColumnCount = 3;
+            tableLayoutPanel1.ColumnCount = 4;
             tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80F));
-            tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
-            tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.3333321F));
+            tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.3333321F));
+            tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.3333321F));
+            tableLayoutPanel1.Controls.Add(btn_OpenBackupFolder, 3, 0);
             tableLayoutPanel1.Controls.Add(btn_ExecOtherServer, 2, 0);
             tableLayoutPanel1.Controls.Add(label5, 0, 0);
             tableLayoutPanel1.Controls.Add(btn_ExecThisServer, 1, 0);
             tableLayoutPanel1.Dock = DockStyle.Top;
+            tableLayoutPanel1.Enabled = false;
             tableLayoutPanel1.Location = new Point(3, 19);
             tableLayoutPanel1.Name = "tableLayoutPanel1";
             tableLayoutPanel1.RowCount = 1;
             tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 20F));
             tableLayoutPanel1.Size = new Size(497, 33);
             tableLayoutPanel1.TabIndex = 3;
+            // 
+            // btn_OpenBackupFolder
+            // 
+            btn_OpenBackupFolder.Dock = DockStyle.Fill;
+            btn_OpenBackupFolder.Location = new Point(358, 2);
+            btn_OpenBackupFolder.Margin = new Padding(2);
+            btn_OpenBackupFolder.Name = "btn_OpenBackupFolder";
+            btn_OpenBackupFolder.Size = new Size(137, 29);
+            btn_OpenBackupFolder.TabIndex = 5;
+            btn_OpenBackupFolder.Text = "Open Backup Folder";
+            btn_OpenBackupFolder.UseVisualStyleBackColor = true;
+            btn_OpenBackupFolder.Click += btn_OpenBackupFolder_Click;
             // 
             // btn_ExecOtherServer
             // 
             btn_ExecOtherServer.Dock = DockStyle.Fill;
-            btn_ExecOtherServer.Location = new Point(290, 2);
+            btn_ExecOtherServer.Location = new Point(220, 2);
             btn_ExecOtherServer.Margin = new Padding(2);
             btn_ExecOtherServer.Name = "btn_ExecOtherServer";
-            btn_ExecOtherServer.Size = new Size(205, 29);
+            btn_ExecOtherServer.Size = new Size(134, 29);
             btn_ExecOtherServer.TabIndex = 4;
             btn_ExecOtherServer.Text = "Other Server";
             btn_ExecOtherServer.UseVisualStyleBackColor = true;
@@ -272,7 +287,7 @@
             btn_ExecThisServer.Location = new Point(82, 2);
             btn_ExecThisServer.Margin = new Padding(2);
             btn_ExecThisServer.Name = "btn_ExecThisServer";
-            btn_ExecThisServer.Size = new Size(204, 29);
+            btn_ExecThisServer.Size = new Size(134, 29);
             btn_ExecThisServer.TabIndex = 1;
             btn_ExecThisServer.Text = "This Server";
             btn_ExecThisServer.UseVisualStyleBackColor = true;
@@ -317,5 +332,6 @@
         private TableLayoutPanel tableLayoutPanel1;
         private Button btn_ExecOtherServer;
         private Label label5;
+        private Button btn_OpenBackupFolder;
     }
 }

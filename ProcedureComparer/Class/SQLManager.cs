@@ -77,15 +77,46 @@ namespace ProcedureComparer
             }
         }
 
+        public DataTable? GetProcedureNames(string filterText)
+        {
+            if (_SqlCommand != null)
+            {
+                string query = @"
+SELECT a.name as procedure_name
+     , a.type as type
+  FROM sys.objects a
+       INNER JOIN sys.sql_modules b ON a.object_id = b.object_id
+ WHERE a.type_desc in ('SQL_SCALAR_FUNCTION', 'SQL_TABLE_VALUED_FUNCTION', 'SQL_STORED_PROCEDURE')
+   AND a.name like '%@PROCEDURE_NAME%'
+ORDER BY a.name
+";
+                _SqlCommand.CommandText = query.Replace("@PROCEDURE_NAME", filterText);
+
+                SqlDataAdapter sd = new SqlDataAdapter(_SqlCommand);
+                DataSet ds = new DataSet();
+                sd.Fill(ds, "Result");
+
+                if (ds == null || ds.Tables.Count == 0)
+                    return null;
+                else
+                    return ds.Tables[0];
+            }
+            else
+                return null;
+        }
+
         public string? GetProcedureContent(string procedureName)
         {
             if (_SqlCommand != null)
             { 
                 string query = @"
-SELECT REPLACE(OBJECT_DEFINITION(object_id), char(10), '\r\n')
-  FROM sys.procedures 
- WHERE OBJECT_NAME(object_id) = '@PROCEDURE_NAME'
+SELECT REPLACE(b.definition, char(10), '\r\n')
+  FROM sys.objects a
+       INNER JOIN sys.sql_modules b ON a.object_id = b.object_id
+ WHERE a.type_desc in ('SQL_SCALAR_FUNCTION', 'SQL_TABLE_VALUED_FUNCTION', 'SQL_STORED_PROCEDURE')
+   AND a.name = '@PROCEDURE_NAME'
 ";
+
                 query = query.Replace("@PROCEDURE_NAME", procedureName);
                 _SqlCommand.CommandText = query;
 
