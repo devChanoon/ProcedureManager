@@ -7,7 +7,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Diagnostics;
+
 using static ProcedureComparer.FormMain;
+using System.IO;
 
 namespace ProcedureComparer
 {
@@ -16,15 +19,16 @@ namespace ProcedureComparer
         SQLManager? _SqlManager = null;
         IniManager _IniManager = new IniManager();
 
-        private readonly string SERVER_INFO_INI_PATH = Path.Combine(Application.StartupPath, INI_FOLDER_NAME, "ServerInfo.ini");
         private const string INI_FOLDER_NAME = "ini_files";
         private const string SAVE_FOLDER_NAME = "procedure_contents";
         private const string BACKUP_FOLDER_NAME = "backups";
 
+        private string _ConfigIniPath = string.Empty;
         private string _SaveDbFolderPath = string.Empty;
         private string _SaveDbBackupFolderPath = string.Empty;
         private string _ServerName = string.Empty;
         private string _CurrentProcedureName = string.Empty;
+        private string _CurrentProcedureType = string.Empty;
 
         private const string INI_KEY_NAME_ADDRESS = "Address";
         private const string INI_KEY_NAME_NAME = "Name";
@@ -47,18 +51,21 @@ namespace ProcedureComparer
                 Directory.CreateDirectory(path);
         }
 
-        public void Initailize(string serverName)
+        public void Initailize(string serverName, string configIniPath)
         {
             CheckDirectory(CreatePath(INI_FOLDER_NAME));
             CheckDirectory(CreatePath(SAVE_FOLDER_NAME));
 
             _ServerName = serverName;
             gb_ServerName.Text = $"{_ServerName} Info";
+            _ConfigIniPath = configIniPath;
 
-            tb_Address.Text = _IniManager.GetIniValue(SERVER_INFO_INI_PATH, _ServerName, INI_KEY_NAME_ADDRESS);
-            tb_Name.Text = _IniManager.GetIniValue(SERVER_INFO_INI_PATH, _ServerName, INI_KEY_NAME_NAME);
-            tb_ID.Text = _IniManager.GetIniValue(SERVER_INFO_INI_PATH, _ServerName, INI_KEY_NAME_ID);
-            tb_PW.Text = _IniManager.GetIniValue(SERVER_INFO_INI_PATH, _ServerName, INI_KEY_NAME_PW);
+            ChangeConnectButtonText();
+
+            tb_Address.Text = _IniManager.GetIniValue(_ConfigIniPath, _ServerName, INI_KEY_NAME_ADDRESS);
+            tb_Name.Text = _IniManager.GetIniValue(_ConfigIniPath, _ServerName, INI_KEY_NAME_NAME);
+            tb_ID.Text = _IniManager.GetIniValue(_ConfigIniPath, _ServerName, INI_KEY_NAME_ID);
+            tb_PW.Text = _IniManager.GetIniValue(_ConfigIniPath, _ServerName, INI_KEY_NAME_PW);
         }
 
         private string CreatePath(params string[] paths)
@@ -71,7 +78,7 @@ namespace ProcedureComparer
             return resultPath;
         }
 
-        private void btn_Connect_Click(object sender, EventArgs e)
+        public void btn_Connect_Click(object sender, EventArgs e)
         {
             if (_SqlManager == null)
                 Connect();
@@ -98,6 +105,7 @@ namespace ProcedureComparer
                 CheckDirectory(_SaveDbBackupFolderPath);
 
                 ChangeServerInfoEnabled(false);
+                ChangeServerFunctionEnabeld(true);
                 SaveServerInfo();
             }
         }
@@ -110,16 +118,17 @@ namespace ProcedureComparer
                 _SqlManager = null;
 
                 ChangeServerInfoEnabled(true);
+                ChangeServerFunctionEnabeld(false);
                 DeleteFiles();
             }
         }
 
         private void SaveServerInfo()
         {
-            _IniManager.SetIniValue(SERVER_INFO_INI_PATH, _ServerName, INI_KEY_NAME_ADDRESS, tb_Address.Text);
-            _IniManager.SetIniValue(SERVER_INFO_INI_PATH, _ServerName, INI_KEY_NAME_NAME, tb_Name.Text);
-            _IniManager.SetIniValue(SERVER_INFO_INI_PATH, _ServerName, INI_KEY_NAME_ID, tb_ID.Text);
-            _IniManager.SetIniValue(SERVER_INFO_INI_PATH, _ServerName, INI_KEY_NAME_PW, tb_PW.Text);
+            _IniManager.SetIniValue(_ConfigIniPath, _ServerName, INI_KEY_NAME_ADDRESS, tb_Address.Text);
+            _IniManager.SetIniValue(_ConfigIniPath, _ServerName, INI_KEY_NAME_NAME, tb_Name.Text);
+            _IniManager.SetIniValue(_ConfigIniPath, _ServerName, INI_KEY_NAME_ID, tb_ID.Text);
+            _IniManager.SetIniValue(_ConfigIniPath, _ServerName, INI_KEY_NAME_PW, tb_PW.Text);
         }
 
         private void ChangeServerInfoEnabled(bool enabled)
@@ -130,19 +139,24 @@ namespace ProcedureComparer
             tb_PW.Enabled = enabled;
         }
 
-        private void ChangeConnectButtonText()
+        private void ChangeServerFunctionEnabeld(bool enabled)
         {
-            btn_Connect.Text = _SqlManager == null ? "Connect" : "Disconnect";
+            tableLayoutPanel1.Enabled = enabled;
         }
 
-        private string SearchProcedureContent(string procedureName)
+        private void ChangeConnectButtonText()
+        {
+            btn_Connect.Text = _SqlManager == null ? $"Connect\r\n(F{Convert.ToInt32(_ServerName.Replace("Server", "")) + 2})" : "Disconnect";
+        }
+
+        private string SearchProcedureContent(string procedureName, string type)
         {
             string result = string.Empty;
             if (_SqlManager != null)
             {
                 string? content = _SqlManager.GetProcedureContent(procedureName);
                 if (content != null)
-                    result = ContentSplit(content);
+                    result = ContentSplit(content, type);
                 else
                     result = string.Empty;
             }
@@ -150,15 +164,23 @@ namespace ProcedureComparer
             return result;
         }
 
-        public void Search(string? procedureName)
+        public DataTable? SearchProcedureNames(string filterText)
         {
-            if (_SqlManager == null || procedureName == null) return;
+            if (_SqlManager == null) return null;
 
-            _CurrentProcedureName = procedureName;
-            tb_ProcedureContent.Text = SearchProcedureContent(procedureName);
+            return _SqlManager.GetProcedureNames(filterText);
         }
 
-        private string ContentSplit(string text)
+        public void Search(string? procedureName, string? type)
+        {
+            if (_SqlManager == null || procedureName == null || type == null) return;
+
+            _CurrentProcedureName = procedureName;
+            _CurrentProcedureType = type;
+            tb_ProcedureContent.Text = SearchProcedureContent(procedureName, type);
+        }
+
+        private string ContentSplit(string text, string type)
         {
             string[] textArray = text.Replace("\\r\\n", "¶").Split('¶').ToArray();
             bool findCreateText = false;
@@ -168,7 +190,7 @@ namespace ProcedureComparer
             {
                 if (!findCreateText)
                 {
-                    Tuple<bool, string> tuple = CheckCreateProcedure(str);
+                    Tuple<bool, string> tuple = CheckCreateProcedure(str, type);
                     findCreateText = tuple.Item1;
                     stringBuilder.AppendLine(tuple.Item2);
                 }
@@ -178,11 +200,11 @@ namespace ProcedureComparer
             return stringBuilder.ToString().Replace("\r\r", "\r");
         }
 
-        private Tuple<bool, string> CheckCreateProcedure(string text)
+        private Tuple<bool, string> CheckCreateProcedure(string text, string type)
         {
             const string FILTER_TEXT = "CREATE";
             const string REPLACE_TEXT = "ALTER";
-            const string TARGET_TEXT = "PROC";
+            string targetText = type == "P" ? "PROC" : "FUNC";
             int filterStringStartIndex = -1;
             bool matched = false;
 
@@ -192,7 +214,7 @@ namespace ProcedureComparer
             if (filterStringStartIndex > -1)
             {
                 upperText = upperText.Substring(filterStringStartIndex + FILTER_TEXT.Length);
-                if (upperText.Length > TARGET_TEXT.Length && upperText.Trim().Substring(0, TARGET_TEXT.Length) == TARGET_TEXT)
+                if (upperText.Length > targetText.Length && upperText.Trim().Substring(0, targetText.Length) == targetText)
                 {
                     matched = true;
                     _text = text.Substring(0, filterStringStartIndex);
@@ -217,19 +239,20 @@ namespace ProcedureComparer
             string title = $"{tb_Address.Text} > {tb_Name.Text}";
             string errorMessage = _SqlManager.SetProcedureContent(procedureContent);
             if (errorMessage != string.Empty)
-            {   
+            {
                 MessageBox.Show(errorMessage, title, MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             else
             {
                 MessageBox.Show("실행이 완료 되었습니다.", title, MessageBoxButtons.OK, MessageBoxIcon.Information);
-                Search(_CurrentProcedureName);
+                Search(_CurrentProcedureName, _CurrentProcedureType);
+                SendKeys.Send("{F6}");
             }
         }
 
         private void BackupProcedure()
         {
-            SaveProcedureContent(_SaveDbBackupFolderPath, SearchProcedureContent(_CurrentProcedureName));
+            SaveProcedureContent(_SaveDbBackupFolderPath, SearchProcedureContent(_CurrentProcedureName, _CurrentProcedureType));
         }
 
         public string SaveProcedure()
@@ -261,6 +284,22 @@ namespace ProcedureComparer
         {
             if (_ExecOtherServer != null)
                 _ExecOtherServer(_ServerName, tb_ProcedureContent.Text);
+        }
+
+        private void btn_OpenBackupFolder_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo()
+                {
+                    FileName = "Explorer.exe",
+                    Arguments = $"\"{_SaveDbBackupFolderPath}\""
+                });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 }
