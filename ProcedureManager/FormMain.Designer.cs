@@ -1,4 +1,4 @@
-﻿namespace ProcedureComparer
+﻿namespace ProcedureManager
 {
     partial class FormMain
     {
@@ -63,16 +63,16 @@
             tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 106F));
             tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
             tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            tableLayoutPanel1.Size = new Size(1264, 911);
+            tableLayoutPanel1.Size = new Size(1584, 911);
             tableLayoutPanel1.TabIndex = 0;
             // 
             // server2
             // 
             server2.Dock = DockStyle.Fill;
-            server2.Location = new Point(760, 3);
+            server2.Location = new Point(920, 3);
             server2.Name = "server2";
             tableLayoutPanel1.SetRowSpan(server2, 3);
-            server2.Size = new Size(501, 905);
+            server2.Size = new Size(661, 905);
             server2.TabIndex = 7;
             // 
             // btn_OpenWinmerge
@@ -86,7 +86,7 @@
             btn_OpenWinmerge.Name = "btn_OpenWinmerge";
             btn_OpenWinmerge.Size = new Size(194, 100);
             btn_OpenWinmerge.TabIndex = 2;
-            btn_OpenWinmerge.Text = "Open WinMerge\r\n(F5)\r\n";
+            btn_OpenWinmerge.Text = "Open WinMerge\r\n(F1)\r\n";
             btn_OpenWinmerge.TextImageRelation = TextImageRelation.ImageBeforeText;
             btn_OpenWinmerge.UseVisualStyleBackColor = true;
             btn_OpenWinmerge.Click += btn_OpenWinmerge_Click;
@@ -133,7 +133,7 @@
             tb_ProcedureName.Dock = DockStyle.Fill;
             tb_ProcedureName.Location = new Point(3, 109);
             tb_ProcedureName.Name = "tb_ProcedureName";
-            tb_ProcedureName.PlaceholderText = "(F6) Input Procedure Name And Press Enter";
+            tb_ProcedureName.PlaceholderText = "(F2) Input Procedure Name And Press Enter";
             tb_ProcedureName.Size = new Size(244, 23);
             tb_ProcedureName.TabIndex = 5;
             tb_ProcedureName.TextChanged += tb_ProcedureName_TextChanged;
@@ -145,7 +145,7 @@
             server1.Location = new Point(253, 3);
             server1.Name = "server1";
             tableLayoutPanel1.SetRowSpan(server1, 3);
-            server1.Size = new Size(501, 905);
+            server1.Size = new Size(661, 905);
             server1.TabIndex = 6;
             // 
             // tmr_SearchProcedureName
@@ -157,11 +157,11 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1264, 911);
+            ClientSize = new Size(1584, 911);
             Controls.Add(tableLayoutPanel1);
             KeyPreview = true;
             Name = "FormMain";
-            Text = "Procedure Comparer";
+            Text = "Procedure Manager";
             WindowState = FormWindowState.Maximized;
             FormClosing += FormMain_FormClosing;
             Load += FormMain_Load;

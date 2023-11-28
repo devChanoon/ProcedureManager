@@ -9,10 +9,10 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Diagnostics;
 
-using static ProcedureComparer.FormMain;
+using static ProcedureManager.FormMain;
 using System.IO;
 
-namespace ProcedureComparer
+namespace ProcedureManager
 {
     public partial class Server : UserControl
     {
@@ -21,19 +21,17 @@ namespace ProcedureComparer
 
         private const string INI_FOLDER_NAME = "ini_files";
         private const string SAVE_FOLDER_NAME = "procedure_contents";
-        private const string BACKUP_FOLDER_NAME = "backups";
-
-        private string _ConfigIniPath = string.Empty;
-        private string _SaveDbFolderPath = string.Empty;
-        private string _SaveDbBackupFolderPath = string.Empty;
-        private string _ServerName = string.Empty;
-        private string _CurrentProcedureName = string.Empty;
-        private string _CurrentProcedureType = string.Empty;
 
         private const string INI_KEY_NAME_ADDRESS = "Address";
         private const string INI_KEY_NAME_NAME = "Name";
         private const string INI_KEY_NAME_ID = "ID";
         private const string INI_KEY_NAME_PW = "PW";
+
+        private string _ConfigIniPath = string.Empty;
+        private string _SaveDbFolderPath = string.Empty;
+        private string _ServerName = string.Empty;
+        private string _CurrentProcedureName = string.Empty;
+        private string _CurrentProcedureType = string.Empty;
 
         public ExecOtherServerDelegate? _ExecOtherServer;
 
@@ -42,7 +40,21 @@ namespace ProcedureComparer
         public Server()
         {
             InitializeComponent();
+            InitializeBackupList(null);
             tb_ProcedureContent.MaxLength = int.MaxValue;
+        }
+
+        private void InitializeBackupList(DataTable? dataTable)
+        {
+            cb_BackupList.Items.Clear();
+            cb_BackupList.Items.Add(string.Empty);
+            if (dataTable != null)
+            {
+                foreach (DataRow dataRow in dataTable.Rows)
+                {
+                    cb_BackupList.Items.Add(new Tuple<string, string>(dataRow["id"].ToString(), dataRow["insert_time"].ToString()));
+                }
+            }
         }
 
         private void CheckDirectory(string path)
@@ -100,13 +112,18 @@ namespace ProcedureComparer
             else
             {
                 _SaveDbFolderPath = CreatePath(SAVE_FOLDER_NAME, $"{tb_Address.Text}_{tb_Name.Text}");
-                _SaveDbBackupFolderPath = Path.Combine(_SaveDbFolderPath, BACKUP_FOLDER_NAME);
                 CheckDirectory(_SaveDbFolderPath);
-                CheckDirectory(_SaveDbBackupFolderPath);
 
                 ChangeServerInfoEnabled(false);
                 ChangeServerFunctionEnabeld(true);
                 SaveServerInfo();
+
+                if (!_SqlManager.CheckExistBackupTable())
+                {
+                    string errorMessage = _SqlManager.CreateBackupTable();
+                    if (errorMessage != string.Empty)
+                        MessageBox.Show($"Backup 테이블 생성에 실패했습니다.\r\n{errorMessage}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
         }
 
@@ -149,21 +166,6 @@ namespace ProcedureComparer
             btn_Connect.Text = _SqlManager == null ? $"Connect\r\n(F{Convert.ToInt32(_ServerName.Replace("Server", "")) + 2})" : "Disconnect";
         }
 
-        private string SearchProcedureContent(string procedureName, string type)
-        {
-            string result = string.Empty;
-            if (_SqlManager != null)
-            {
-                string? content = _SqlManager.GetProcedureContent(procedureName);
-                if (content != null)
-                    result = ContentSplit(content, type);
-                else
-                    result = string.Empty;
-            }
-
-            return result;
-        }
-
         public DataTable? SearchProcedureNames(string filterText)
         {
             if (_SqlManager == null) return null;
@@ -171,13 +173,29 @@ namespace ProcedureComparer
             return _SqlManager.GetProcedureNames(filterText);
         }
 
-        public void Search(string? procedureName, string? type)
+        public void Search(string? procedureName, string? type, string? backupId = null)
         {
             if (_SqlManager == null || procedureName == null || type == null) return;
 
             _CurrentProcedureName = procedureName;
             _CurrentProcedureType = type;
-            tb_ProcedureContent.Text = SearchProcedureContent(procedureName, type);
+            tb_ProcedureContent.Text = SearchProcedureContent(procedureName, type, backupId);
+        }
+
+        private string SearchProcedureContent(string procedureName, string type, string? backupId = null)
+        {
+            string result = string.Empty;
+            if (_SqlManager != null)
+            {
+                if (backupId == null)
+                    InitializeBackupList(_SqlManager.GetBackupList(procedureName));
+
+                string content = backupId == null ? _SqlManager.GetProcedureContent(procedureName) : _SqlManager.GetBackupProcedureContent(backupId);
+                if (content != string.Empty)
+                    result = ContentSplit(content, type);
+            }
+
+            return result;
         }
 
         private string ContentSplit(string text, string type)
@@ -228,14 +246,14 @@ namespace ProcedureComparer
 
         private void btn_Exec_Click(object sender, EventArgs e)
         {
-            ExecuteProcedure(tb_ProcedureContent.Text);
+            ExecuteProcedure(_CurrentProcedureName, _CurrentProcedureType, tb_ProcedureContent.Text);
         }
 
-        public void ExecuteProcedure(string procedureContent)
+        public void ExecuteProcedure(string name, string type, string procedureContent)
         {
             if (_SqlManager == null) return;
 
-            BackupProcedure();
+            BackupProcedure(name, type, procedureContent);
             string title = $"{tb_Address.Text} > {tb_Name.Text}";
             string errorMessage = _SqlManager.SetProcedureContent(procedureContent);
             if (errorMessage != string.Empty)
@@ -246,13 +264,22 @@ namespace ProcedureComparer
             {
                 MessageBox.Show("실행이 완료 되었습니다.", title, MessageBoxButtons.OK, MessageBoxIcon.Information);
                 Search(_CurrentProcedureName, _CurrentProcedureType);
-                SendKeys.Send("{F6}");
             }
         }
 
-        private void BackupProcedure()
+        private void BackupProcedure(string name, string type, string currentProcedureContent)
         {
-            SaveProcedureContent(_SaveDbBackupFolderPath, SearchProcedureContent(_CurrentProcedureName, _CurrentProcedureType));
+            if (_SqlManager != null)
+            {
+                string prevProcedureContent = SearchProcedureContent(_CurrentProcedureName, _CurrentProcedureType);
+                if (prevProcedureContent != currentProcedureContent)
+                {
+                    string errorMessage = _SqlManager.InsertBackupProcedureContent(name, type, prevProcedureContent);
+                    if (errorMessage != string.Empty)
+                        MessageBox.Show(errorMessage, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+
         }
 
         public string SaveProcedure()
@@ -265,7 +292,7 @@ namespace ProcedureComparer
 
         private string SaveProcedureContent(string path, string procedureContent)
         {
-            string fileName = $"{_CurrentProcedureName}_{DateTime.Now.ToString("yyyyMMddHHmmssfff")}.txt";
+            string fileName = $"{_CurrentProcedureName} ({DateTime.Now.ToString("yyyyMMddHHmmssfff")}).txt";
             string saveFilePath = Path.Combine(path, fileName);
             File.WriteAllText(saveFilePath, procedureContent);
 
@@ -286,20 +313,18 @@ namespace ProcedureComparer
                 _ExecOtherServer(_ServerName, tb_ProcedureContent.Text);
         }
 
-        private void btn_OpenBackupFolder_Click(object sender, EventArgs e)
+        private void cb_BackupList_SelectedIndexChanged(object sender, EventArgs e)
         {
-            try
-            {
-                Process.Start(new ProcessStartInfo()
-                {
-                    FileName = "Explorer.exe",
-                    Arguments = $"\"{_SaveDbBackupFolderPath}\""
-                });
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            string? backupId = null;
+            if (cb_BackupList.SelectedItem.GetType() != typeof(string))
+                backupId = ((Tuple<string, string>)cb_BackupList.SelectedItem).Item1;
+
+            Search(_CurrentProcedureName, _CurrentProcedureType, backupId);
+        }
+
+        private void btn_RefreshBackupList_Click(object sender, EventArgs e)
+        {
+            InitializeBackupList(_SqlManager.GetBackupList(_CurrentProcedureName));
         }
     }
 }

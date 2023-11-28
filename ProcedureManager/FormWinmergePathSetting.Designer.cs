@@ -1,4 +1,4 @@
-﻿namespace ProcedureComparer
+﻿namespace ProcedureManager
 {
     partial class FormWinmergePathSetting
     {

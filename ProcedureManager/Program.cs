@@ -1,4 +1,4 @@
-namespace ProcedureComparer
+namespace ProcedureManager
 {
     internal static class Program
     {

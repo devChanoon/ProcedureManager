@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace ProcedureComparer
+namespace ProcedureManager
 {
     public partial class FormWinmergePathSetting : Form
     {
