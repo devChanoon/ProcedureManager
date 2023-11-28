@@ -2,7 +2,7 @@ using System.Data;
 using System.Diagnostics;
 using System.Linq;
 
-namespace ProcedureComparer
+namespace ProcedureManager
 {
     public partial class FormMain : Form
     {
@@ -12,7 +12,6 @@ namespace ProcedureComparer
         private const string SERVER2_NAME = "Server2";
         private const string INI_FOLDER_NAME = "ini_files";
 
-        private readonly string PROCEDURE_LIST_INI_PATH = Path.Combine(Application.StartupPath, INI_FOLDER_NAME, "ProcedureList.ini");
         private readonly string CONFIG_INI_PATH = Path.Combine(Application.StartupPath, INI_FOLDER_NAME, "Config.ini");
 
         private string _WinMergePath = @"C:\Program Files\WinMerge\WinMergeU.exe";
@@ -108,7 +107,10 @@ namespace ProcedureComparer
                 MessageBox.Show($"{otherServerName} > DB에 연결되지 않았습니다.");
                 return;
             }
-            otherServer.ExecuteProcedure(procedureContent);
+
+            string? procedureName = lv_ProcedureList.SelectedItems[0].SubItems[0].Text.Trim();
+            string? type = lv_ProcedureList.SelectedItems[0].SubItems[1].Text.Trim();
+            otherServer.ExecuteProcedure(procedureName, type, procedureContent);
         }
 
         private void btn_WinMergeSetting_Click(object sender, EventArgs e)
@@ -182,6 +184,15 @@ namespace ProcedureComparer
         {
             switch (e.KeyCode)
             {
+                case Keys.F1:
+                    btn_OpenWinmerge_Click(null, null);
+                    break;
+
+                case Keys.F2:
+                    tb_ProcedureName.Focus();
+                    tb_ProcedureName.SelectAll();
+                    break;
+
                 case Keys.F3:
                     if (!server1.isConnect)
                         server1.btn_Connect_Click(null, null);
@@ -190,15 +201,6 @@ namespace ProcedureComparer
                 case Keys.F4:
                     if (!server2.isConnect)
                         server2.btn_Connect_Click(null, null);
-                    break;
-
-                case Keys.F5:
-                    btn_OpenWinmerge_Click(null, null);
-                    break;
-
-                case Keys.F6:
-                    tb_ProcedureName.Focus();
-                    tb_ProcedureName.SelectAll();
                     break;
             }
         }
