@@ -42,7 +42,7 @@
             label4 = new Label();
             label2 = new Label();
             tb_Address = new TextBox();
-            groupBox2 = new GroupBox();
+            gb_ProcedureContent = new GroupBox();
             tb_ProcedureContent = new TextBox();
             tableLayoutPanel1 = new TableLayoutPanel();
             label6 = new Label();
@@ -55,7 +55,7 @@
             gb_ServerName.SuspendLayout();
             tlp_ServerInfo.SuspendLayout();
             panel1.SuspendLayout();
-            groupBox2.SuspendLayout();
+            gb_ProcedureContent.SuspendLayout();
             tableLayoutPanel1.SuspendLayout();
             SuspendLayout();
             // 
@@ -65,7 +65,7 @@
             tlp_Server.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             tlp_Server.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 20F));
             tlp_Server.Controls.Add(gb_ServerName, 0, 0);
-            tlp_Server.Controls.Add(groupBox2, 0, 1);
+            tlp_Server.Controls.Add(gb_ProcedureContent, 0, 1);
             tlp_Server.Dock = DockStyle.Fill;
             tlp_Server.Location = new Point(0, 0);
             tlp_Server.Name = "tlp_Server";
@@ -131,6 +131,7 @@
             btn_Connect.Name = "btn_Connect";
             btn_Connect.Size = new Size(80, 106);
             btn_Connect.TabIndex = 0;
+            btn_Connect.TabStop = false;
             btn_Connect.Text = "Connect";
             btn_Connect.UseVisualStyleBackColor = true;
             btn_Connect.Click += btn_Connect_Click;
@@ -207,17 +208,18 @@
             tb_Address.Size = new Size(423, 23);
             tb_Address.TabIndex = 5;
             // 
-            // groupBox2
+            // gb_ProcedureContent
             // 
-            groupBox2.Controls.Add(tb_ProcedureContent);
-            groupBox2.Controls.Add(tableLayoutPanel1);
-            groupBox2.Dock = DockStyle.Fill;
-            groupBox2.Location = new Point(3, 139);
-            groupBox2.Name = "groupBox2";
-            groupBox2.Size = new Size(619, 535);
-            groupBox2.TabIndex = 1;
-            groupBox2.TabStop = false;
-            groupBox2.Text = "Procedure Content";
+            gb_ProcedureContent.BackColor = Color.Transparent;
+            gb_ProcedureContent.Controls.Add(tb_ProcedureContent);
+            gb_ProcedureContent.Controls.Add(tableLayoutPanel1);
+            gb_ProcedureContent.Dock = DockStyle.Fill;
+            gb_ProcedureContent.Location = new Point(3, 139);
+            gb_ProcedureContent.Name = "gb_ProcedureContent";
+            gb_ProcedureContent.Size = new Size(619, 535);
+            gb_ProcedureContent.TabIndex = 1;
+            gb_ProcedureContent.TabStop = false;
+            gb_ProcedureContent.Text = "Procedure Content";
             // 
             // tb_ProcedureContent
             // 
@@ -229,6 +231,7 @@
             tb_ProcedureContent.ScrollBars = ScrollBars.Vertical;
             tb_ProcedureContent.Size = new Size(613, 480);
             tb_ProcedureContent.TabIndex = 0;
+            tb_ProcedureContent.TabStop = false;
             // 
             // tableLayoutPanel1
             // 
@@ -272,6 +275,7 @@
             btn_ExecOtherServer.Name = "btn_ExecOtherServer";
             btn_ExecOtherServer.Size = new Size(128, 29);
             btn_ExecOtherServer.TabIndex = 4;
+            btn_ExecOtherServer.TabStop = false;
             btn_ExecOtherServer.Text = "Other Server";
             btn_ExecOtherServer.UseVisualStyleBackColor = true;
             btn_ExecOtherServer.Click += btn_ExecOtherServer_Click;
@@ -294,9 +298,10 @@
             btn_ExecThisServer.Name = "btn_ExecThisServer";
             btn_ExecThisServer.Size = new Size(128, 29);
             btn_ExecThisServer.TabIndex = 1;
+            btn_ExecThisServer.TabStop = false;
             btn_ExecThisServer.Text = "This Server";
             btn_ExecThisServer.UseVisualStyleBackColor = true;
-            btn_ExecThisServer.Click += btn_Exec_Click;
+            btn_ExecThisServer.Click += btn_ExecThisServer_Click;
             // 
             // cb_BackupList
             // 
@@ -309,6 +314,7 @@
             cb_BackupList.Name = "cb_BackupList";
             cb_BackupList.Size = new Size(176, 23);
             cb_BackupList.TabIndex = 5;
+            cb_BackupList.TabStop = false;
             cb_BackupList.SelectedIndexChanged += cb_BackupList_SelectedIndexChanged;
             // 
             // btn_RefreshBackupList
@@ -320,6 +326,7 @@
             btn_RefreshBackupList.Name = "btn_RefreshBackupList";
             btn_RefreshBackupList.Size = new Size(24, 27);
             btn_RefreshBackupList.TabIndex = 7;
+            btn_RefreshBackupList.TabStop = false;
             btn_RefreshBackupList.UseVisualStyleBackColor = true;
             btn_RefreshBackupList.Click += btn_RefreshBackupList_Click;
             // 
@@ -335,8 +342,8 @@
             tlp_ServerInfo.ResumeLayout(false);
             tlp_ServerInfo.PerformLayout();
             panel1.ResumeLayout(false);
-            groupBox2.ResumeLayout(false);
-            groupBox2.PerformLayout();
+            gb_ProcedureContent.ResumeLayout(false);
+            gb_ProcedureContent.PerformLayout();
             tableLayoutPanel1.ResumeLayout(false);
             ResumeLayout(false);
         }
@@ -346,7 +353,7 @@
         private TableLayoutPanel tlp_Server;
         private GroupBox gb_ServerName;
         private TableLayoutPanel tlp_ServerInfo;
-        private GroupBox groupBox2;
+        private GroupBox gb_ProcedureContent;
         private TextBox tb_PW;
         private TextBox tb_ID;
         private TextBox tb_Name;
@@ -362,7 +369,6 @@
         private TableLayoutPanel tableLayoutPanel1;
         private Button btn_ExecOtherServer;
         private Label label5;
-        private Button btn_OpenBackupFolder;
         private ComboBox cb_BackupList;
         private Label label6;
         private Button btn_RefreshBackupList;

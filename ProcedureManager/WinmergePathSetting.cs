@@ -10,7 +10,7 @@ using System.Windows.Forms;
 
 namespace ProcedureManager
 {
-    public partial class FormWinmergePathSetting : Form
+    public partial class WinmergePathSetting : Form
     {
         private const string WINMERGE_PROGRAM_NAME = "WinMergeU.exe";
         private const string DEFAULT_WINMERGE_PATH = @"C:\Program Files\WinMerge";
@@ -22,7 +22,7 @@ namespace ProcedureManager
 
         private IniManager _IniManager = new IniManager();
 
-        public FormWinmergePathSetting(string configIniPath)
+        public WinmergePathSetting(string configIniPath)
         {
             InitializeComponent();
             _ConfigIniPath = configIniPath;

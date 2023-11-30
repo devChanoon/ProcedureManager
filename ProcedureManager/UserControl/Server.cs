@@ -9,15 +9,18 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Diagnostics;
 
-using static ProcedureManager.FormMain;
-using System.IO;
+using static ProcedureManager.Main;
 
 namespace ProcedureManager
 {
     public partial class Server : UserControl
     {
-        SQLManager? _SqlManager = null;
-        IniManager _IniManager = new IniManager();
+        private SQLManager? _SqlManager = null;
+        private IniManager _IniManager = new IniManager();
+        private SyntaxAnalyzer _SyntaxAnalyzer = new SyntaxAnalyzer();
+
+        public ExecOtherServerDelegate? _ExecOtherServer;
+        public bool isConnect { get { return _SqlManager != null; } }
 
         private const string INI_FOLDER_NAME = "ini_files";
         private const string SAVE_FOLDER_NAME = "procedure_contents";
@@ -27,21 +30,33 @@ namespace ProcedureManager
         private const string INI_KEY_NAME_ID = "ID";
         private const string INI_KEY_NAME_PW = "PW";
 
+        private readonly Color _SelectedBackColor = Color.CornflowerBlue;
+        private readonly Color _DefaultBackColor = SystemColors.Control;
+
         private string _ConfigIniPath = string.Empty;
         private string _SaveDbFolderPath = string.Empty;
         private string _ServerName = string.Empty;
         private string _CurrentProcedureName = string.Empty;
-        private string _CurrentProcedureType = string.Empty;
 
-        public ExecOtherServerDelegate? _ExecOtherServer;
-
-        public bool isConnect { get { return _SqlManager != null; } }
+        private bool isSelected { get { return gb_ProcedureContent.BackColor == _SelectedBackColor; } }
 
         public Server()
         {
             InitializeComponent();
             InitializeBackupList(null);
             tb_ProcedureContent.MaxLength = int.MaxValue;
+        }
+
+        public void SelectServer(bool isSelect)
+        {
+            gb_ProcedureContent.BackColor = isSelect ? _SelectedBackColor : _DefaultBackColor;
+            btn_ExecThisServer.Text = string.Format("This Server{0}", isSelect ? " (F5)" : "");
+            btn_ExecOtherServer.Text = string.Format("Other Server{0}", isSelect ? " (F6)" : "");
+            if (isSelect)
+            {
+                tb_ProcedureContent.SelectionStart = 0;
+                tb_ProcedureContent.Focus();
+            }
         }
 
         private void InitializeBackupList(DataTable? dataTable)
@@ -52,7 +67,7 @@ namespace ProcedureManager
             {
                 foreach (DataRow dataRow in dataTable.Rows)
                 {
-                    cb_BackupList.Items.Add(new Tuple<string, string>(dataRow["id"].ToString(), dataRow["insert_time"].ToString()));
+                    cb_BackupList.Items.Add(new Tuple<string, string>(dataRow.GetValueToString("id"), dataRow.GetValueToString("insert_time")));
                 }
             }
         }
@@ -90,7 +105,7 @@ namespace ProcedureManager
             return resultPath;
         }
 
-        public void btn_Connect_Click(object sender, EventArgs e)
+        public void btn_Connect_Click(object? sender, EventArgs? e)
         {
             if (_SqlManager == null)
                 Connect();
@@ -118,6 +133,8 @@ namespace ProcedureManager
                 ChangeServerFunctionEnabeld(true);
                 SaveServerInfo();
 
+                gb_ProcedureContent.Text = $"Procedure Content (F{Convert.ToInt32(_ServerName.Replace("Server", "")) + 2})";
+
                 if (!_SqlManager.CheckExistBackupTable())
                 {
                     string errorMessage = _SqlManager.CreateBackupTable();
@@ -133,6 +150,8 @@ namespace ProcedureManager
             {
                 _SqlManager.Disconnect();
                 _SqlManager = null;
+
+                gb_ProcedureContent.Text = "Procedure Content";
 
                 ChangeServerInfoEnabled(true);
                 ChangeServerFunctionEnabeld(false);
@@ -170,19 +189,18 @@ namespace ProcedureManager
         {
             if (_SqlManager == null) return null;
 
-            return _SqlManager.GetProcedureNames(filterText);
+            return _SqlManager.GetProcedureList(filterText);
         }
 
-        public void Search(string? procedureName, string? type, string? backupId = null)
+        public void Search(string? procedureName, string? backupId = null)
         {
-            if (_SqlManager == null || procedureName == null || type == null) return;
+            if (_SqlManager == null || procedureName == null) return;
 
             _CurrentProcedureName = procedureName;
-            _CurrentProcedureType = type;
-            tb_ProcedureContent.Text = SearchProcedureContent(procedureName, type, backupId);
+            tb_ProcedureContent.Text = SearchProcedureContent(procedureName, backupId);
         }
 
-        private string SearchProcedureContent(string procedureName, string type, string? backupId = null)
+        private string SearchProcedureContent(string procedureName, string? backupId = null)
         {
             string result = string.Empty;
             if (_SqlManager != null)
@@ -192,13 +210,13 @@ namespace ProcedureManager
 
                 string content = backupId == null ? _SqlManager.GetProcedureContent(procedureName) : _SqlManager.GetBackupProcedureContent(backupId);
                 if (content != string.Empty)
-                    result = ContentSplit(content, type);
+                    result = ContentSplit(content);
             }
 
             return result;
         }
 
-        private string ContentSplit(string text, string type)
+        private string ContentSplit(string text)
         {
             string[] textArray = text.Replace("\\r\\n", "¶").Split('¶').ToArray();
             bool findCreateText = false;
@@ -208,7 +226,7 @@ namespace ProcedureManager
             {
                 if (!findCreateText)
                 {
-                    Tuple<bool, string> tuple = CheckCreateProcedure(str, type);
+                    Tuple<bool, string> tuple = CheckCreateProcedure(str);
                     findCreateText = tuple.Item1;
                     stringBuilder.AppendLine(tuple.Item2);
                 }
@@ -218,63 +236,100 @@ namespace ProcedureManager
             return stringBuilder.ToString().Replace("\r\r", "\r");
         }
 
-        private Tuple<bool, string> CheckCreateProcedure(string text, string type)
+        private Tuple<bool, string> CheckCreateProcedure(string text)
         {
             const string FILTER_TEXT = "CREATE";
             const string REPLACE_TEXT = "ALTER";
-            string targetText = type == "P" ? "PROC" : "FUNC";
-            int filterStringStartIndex = -1;
-            bool matched = false;
 
-            string _text = text;
-            string upperText = _text.ToUpper();
-            filterStringStartIndex = upperText.IndexOf(FILTER_TEXT);
-            if (filterStringStartIndex > -1)
+            Tuple<int, string, string> result = _SyntaxAnalyzer.GetTargetSyntaxIndex(new List<string> { FILTER_TEXT }, text);
+            int filterTextStartIndex = result.Item1;
+            string _text = result.Item2;
+            bool matched = false;
+            if (filterTextStartIndex > -1)
             {
-                upperText = upperText.Substring(filterStringStartIndex + FILTER_TEXT.Length);
-                if (upperText.Length > targetText.Length && upperText.Trim().Substring(0, targetText.Length) == targetText)
+                Tuple<int, string> checkResult = _SyntaxAnalyzer.CheckFirstWord(new List<string> { "PROC", "FUNC" }, _text);
+                if (checkResult.Item1 > -1)
                 {
                     matched = true;
-                    _text = text.Substring(0, filterStringStartIndex);
+                    _text = text.Substring(0, filterTextStartIndex);
                     _text += REPLACE_TEXT;
-                    _text += text.Substring(filterStringStartIndex + FILTER_TEXT.Length);
+                    _text += text.Substring(filterTextStartIndex + FILTER_TEXT.Length);
                 }
             }
 
             return new Tuple<bool, string>(matched, _text);
         }
 
-        private void btn_Exec_Click(object sender, EventArgs e)
+        public void Execute(bool isThisServer)
         {
-            ExecuteProcedure(_CurrentProcedureName, _CurrentProcedureType, tb_ProcedureContent.Text);
+            if (isSelected)
+            {
+                if (isThisServer)
+                    btn_ExecThisServer_Click(null, null);
+                else
+                    btn_ExecOtherServer_Click(null, null);
+            }
         }
 
-        public void ExecuteProcedure(string name, string type, string procedureContent)
+        private void btn_ExecThisServer_Click(object? sender, EventArgs? e)
+        {
+            ExecuteProcedure(tb_ProcedureContent.Text);
+        }
+
+        public void ExecuteProcedure(string procedureContent)
         {
             if (_SqlManager == null) return;
 
-            BackupProcedure(name, type, procedureContent);
-            string title = $"{tb_Address.Text} > {tb_Name.Text}";
-            string errorMessage = _SqlManager.SetProcedureContent(procedureContent);
-            if (errorMessage != string.Empty)
+            ProcedureList procedureList = _SyntaxAnalyzer.GetProcedureList(procedureContent);
+            if (procedureList.Count > 0)
             {
-                MessageBox.Show(errorMessage, title, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                string title = $"{tb_Address.Text} > {tb_Name.Text}";
+
+                bool executeSearch = false;
+                List<Tuple<string, string?>> errorList = new List<Tuple<string, string?>>();
+                for (int i = 0; i < procedureList.Count; i++)
+                {
+                    Tuple<string?, string?> procedure = procedureList.GetPair(i);
+                    if (procedure.Item1 != null)
+                    {
+                        if (!executeSearch && _CurrentProcedureName == procedure.Item1)
+                            executeSearch = true;
+
+                        BackupProcedure(procedure.Item1, procedure.Item2);
+                    }
+
+                    string errorMessage = _SqlManager.SetProcedureContent(procedure.Item2);
+                    if (errorMessage != string.Empty)
+                        errorList.Add(new Tuple<string, string?>(errorMessage, procedure.Item2));
+                }
+
+                if (errorList.Count == 0)
+                {
+                    MessageBox.Show("실행이 완료 되었습니다.", title, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    if (executeSearch)
+                        Search(_CurrentProcedureName);
+                }
+                else
+                {
+                    foreach (Tuple<string, string?> error in errorList)
+                    {
+                        ErrorMessageBox errorMessageBox = new ErrorMessageBox(title, error.Item1, error.Item2);
+                        errorMessageBox.Show();
+                    }
+                }
             }
             else
-            {
-                MessageBox.Show("실행이 완료 되었습니다.", title, MessageBoxButtons.OK, MessageBoxIcon.Information);
-                Search(_CurrentProcedureName, _CurrentProcedureType);
-            }
+                _SqlManager.SetProcedureContent(procedureContent);
         }
 
-        private void BackupProcedure(string name, string type, string currentProcedureContent)
+        private void BackupProcedure(string name, string? currentProcedureContent)
         {
             if (_SqlManager != null)
             {
-                string prevProcedureContent = SearchProcedureContent(_CurrentProcedureName, _CurrentProcedureType);
+                string prevProcedureContent = SearchProcedureContent(name);
                 if (prevProcedureContent != currentProcedureContent)
                 {
-                    string errorMessage = _SqlManager.InsertBackupProcedureContent(name, type, prevProcedureContent);
+                    string errorMessage = _SqlManager.InsertBackupProcedureContent(name, prevProcedureContent);
                     if (errorMessage != string.Empty)
                         MessageBox.Show(errorMessage, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
@@ -307,7 +362,7 @@ namespace ProcedureManager
             }
         }
 
-        private void btn_ExecOtherServer_Click(object sender, EventArgs e)
+        private void btn_ExecOtherServer_Click(object? sender, EventArgs? e)
         {
             if (_ExecOtherServer != null)
                 _ExecOtherServer(_ServerName, tb_ProcedureContent.Text);
@@ -319,12 +374,13 @@ namespace ProcedureManager
             if (cb_BackupList.SelectedItem.GetType() != typeof(string))
                 backupId = ((Tuple<string, string>)cb_BackupList.SelectedItem).Item1;
 
-            Search(_CurrentProcedureName, _CurrentProcedureType, backupId);
+            Search(_CurrentProcedureName, backupId);
         }
 
         private void btn_RefreshBackupList_Click(object sender, EventArgs e)
         {
-            InitializeBackupList(_SqlManager.GetBackupList(_CurrentProcedureName));
+            if (_SqlManager != null)
+                InitializeBackupList(_SqlManager.GetBackupList(_CurrentProcedureName));
         }
     }
 }
