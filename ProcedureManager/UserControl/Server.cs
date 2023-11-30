@@ -30,6 +30,9 @@ namespace ProcedureManager
         private const string INI_KEY_NAME_ID = "ID";
         private const string INI_KEY_NAME_PW = "PW";
 
+        private const int FOLD_HEIGHT = 40;
+        private const int OPEN_HEIGHT = 220;
+
         private readonly Color _SelectedBackColor = Color.CornflowerBlue;
         private readonly Color _DefaultBackColor = SystemColors.Control;
 
@@ -39,6 +42,7 @@ namespace ProcedureManager
         private string _CurrentProcedureName = string.Empty;
 
         private bool isSelected { get { return gb_ProcedureContent.BackColor == _SelectedBackColor; } }
+        private bool isResultOpen { get { return splitContainer1.Height - splitContainer1.SplitterDistance > FOLD_HEIGHT + result1.Margin.Top + result1.Margin.Bottom; } }
 
         public Server()
         {
@@ -93,6 +97,9 @@ namespace ProcedureManager
             tb_Name.Text = _IniManager.GetIniValue(_ConfigIniPath, _ServerName, INI_KEY_NAME_NAME);
             tb_ID.Text = _IniManager.GetIniValue(_ConfigIniPath, _ServerName, INI_KEY_NAME_ID);
             tb_PW.Text = _IniManager.GetIniValue(_ConfigIniPath, _ServerName, INI_KEY_NAME_PW);
+
+            result1.btn_Close.Click += Btn_Close_Click;
+            ResultFold();
         }
 
         private string CreatePath(params string[] paths)
@@ -271,19 +278,27 @@ namespace ProcedureManager
             }
         }
 
+        private string GetProcedureContent()
+        {
+            if (tb_ProcedureContent.SelectionLength > 0)
+                return tb_ProcedureContent.Text.Substring(tb_ProcedureContent.SelectionStart, tb_ProcedureContent.SelectionLength);
+            else
+                return tb_ProcedureContent.Text;
+        }
+
         private void btn_ExecThisServer_Click(object? sender, EventArgs? e)
         {
-            ExecuteProcedure(tb_ProcedureContent.Text);
+            ExecuteProcedure(GetProcedureContent());
         }
 
         public void ExecuteProcedure(string procedureContent)
         {
             if (_SqlManager == null) return;
 
+            string title = $"{tb_Address.Text} > {tb_Name.Text}";
             ProcedureList procedureList = _SyntaxAnalyzer.GetProcedureList(procedureContent);
             if (procedureList.Count > 0)
             {
-                string title = $"{tb_Address.Text} > {tb_Name.Text}";
 
                 bool executeSearch = false;
                 List<Tuple<string, string?>> errorList = new List<Tuple<string, string?>>();
@@ -319,7 +334,20 @@ namespace ProcedureManager
                 }
             }
             else
-                _SqlManager.SetProcedureContent(procedureContent);
+            {
+                Tuple<DataSet?, string> result = _SqlManager.ExecuteQueryGetDataSet(procedureContent);
+                if (result.Item2 != string.Empty)
+                {
+                    ErrorMessageBox errorMessageBox = new ErrorMessageBox(title, result.Item2, procedureContent);
+                    errorMessageBox.Show();
+                }
+                else
+                {
+                    result1.SetDataGrid(result.Item1);
+                    if (!isResultOpen)
+                        ResultOpen();
+                }
+            }
         }
 
         private void BackupProcedure(string name, string? currentProcedureContent)
@@ -334,7 +362,6 @@ namespace ProcedureManager
                         MessageBox.Show(errorMessage, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
-
         }
 
         public string SaveProcedure()
@@ -365,7 +392,7 @@ namespace ProcedureManager
         private void btn_ExecOtherServer_Click(object? sender, EventArgs? e)
         {
             if (_ExecOtherServer != null)
-                _ExecOtherServer(_ServerName, tb_ProcedureContent.Text);
+                _ExecOtherServer(_ServerName, GetProcedureContent());
         }
 
         private void cb_BackupList_SelectedIndexChanged(object sender, EventArgs e)
@@ -381,6 +408,34 @@ namespace ProcedureManager
         {
             if (_SqlManager != null)
                 InitializeBackupList(_SqlManager.GetBackupList(_CurrentProcedureName));
+        }
+
+        private void Btn_Close_Click(object? sender, EventArgs e)
+        {
+            if (isResultOpen)
+                ResultFold();
+            else
+                ResultOpen();
+        }
+
+        public void ResultOpen()
+        {
+            splitContainer1.SplitterDistance = splitContainer1.Height - OPEN_HEIGHT;
+            result1.btn_Close.BackgroundImage = Properties.Resources.double_down_25;
+        }
+
+        public void ResultFold()
+        {
+            splitContainer1.SplitterDistance = splitContainer1.Height - FOLD_HEIGHT;
+            result1.btn_Close.BackgroundImage = Properties.Resources.double_up_25;
+        }
+
+        private void splitContainer1_SplitterMoved(object sender, SplitterEventArgs e)
+        {
+            if (splitContainer1.Height - e.SplitY > FOLD_HEIGHT)
+                result1.btn_Close.BackgroundImage = Properties.Resources.double_down_25;
+            else
+                result1.btn_Close.BackgroundImage = Properties.Resources.double_up_25;
         }
     }
 }

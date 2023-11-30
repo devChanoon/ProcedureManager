@@ -43,7 +43,9 @@
             label2 = new Label();
             tb_Address = new TextBox();
             gb_ProcedureContent = new GroupBox();
+            splitContainer1 = new SplitContainer();
             tb_ProcedureContent = new TextBox();
+            result1 = new Result();
             tableLayoutPanel1 = new TableLayoutPanel();
             label6 = new Label();
             btn_ExecOtherServer = new Button();
@@ -56,6 +58,10 @@
             tlp_ServerInfo.SuspendLayout();
             panel1.SuspendLayout();
             gb_ProcedureContent.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
+            splitContainer1.Panel1.SuspendLayout();
+            splitContainer1.Panel2.SuspendLayout();
+            splitContainer1.SuspendLayout();
             tableLayoutPanel1.SuspendLayout();
             SuspendLayout();
             // 
@@ -72,7 +78,7 @@
             tlp_Server.RowCount = 2;
             tlp_Server.RowStyles.Add(new RowStyle(SizeType.Absolute, 136F));
             tlp_Server.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            tlp_Server.Size = new Size(625, 677);
+            tlp_Server.Size = new Size(625, 950);
             tlp_Server.TabIndex = 0;
             // 
             // gb_ServerName
@@ -211,27 +217,56 @@
             // gb_ProcedureContent
             // 
             gb_ProcedureContent.BackColor = Color.Transparent;
-            gb_ProcedureContent.Controls.Add(tb_ProcedureContent);
+            gb_ProcedureContent.Controls.Add(splitContainer1);
             gb_ProcedureContent.Controls.Add(tableLayoutPanel1);
             gb_ProcedureContent.Dock = DockStyle.Fill;
             gb_ProcedureContent.Location = new Point(3, 139);
             gb_ProcedureContent.Name = "gb_ProcedureContent";
-            gb_ProcedureContent.Size = new Size(619, 535);
+            gb_ProcedureContent.Size = new Size(619, 808);
             gb_ProcedureContent.TabIndex = 1;
             gb_ProcedureContent.TabStop = false;
             gb_ProcedureContent.Text = "Procedure Content";
+            // 
+            // splitContainer1
+            // 
+            splitContainer1.Dock = DockStyle.Fill;
+            splitContainer1.Location = new Point(3, 52);
+            splitContainer1.Name = "splitContainer1";
+            splitContainer1.Orientation = Orientation.Horizontal;
+            // 
+            // splitContainer1.Panel1
+            // 
+            splitContainer1.Panel1.Controls.Add(tb_ProcedureContent);
+            splitContainer1.Panel1MinSize = 40;
+            // 
+            // splitContainer1.Panel2
+            // 
+            splitContainer1.Panel2.Controls.Add(result1);
+            splitContainer1.Panel2MinSize = 40;
+            splitContainer1.Size = new Size(613, 753);
+            splitContainer1.SplitterDistance = 533;
+            splitContainer1.TabIndex = 5;
+            splitContainer1.SplitterMoved += splitContainer1_SplitterMoved;
             // 
             // tb_ProcedureContent
             // 
             tb_ProcedureContent.Dock = DockStyle.Fill;
             tb_ProcedureContent.Font = new Font("맑은 고딕", 9.75F, FontStyle.Regular, GraphicsUnit.Point);
-            tb_ProcedureContent.Location = new Point(3, 52);
+            tb_ProcedureContent.Location = new Point(0, 0);
             tb_ProcedureContent.Multiline = true;
             tb_ProcedureContent.Name = "tb_ProcedureContent";
             tb_ProcedureContent.ScrollBars = ScrollBars.Vertical;
-            tb_ProcedureContent.Size = new Size(613, 480);
+            tb_ProcedureContent.Size = new Size(613, 533);
             tb_ProcedureContent.TabIndex = 0;
             tb_ProcedureContent.TabStop = false;
+            // 
+            // result1
+            // 
+            result1.Dock = DockStyle.Fill;
+            result1.Location = new Point(0, 0);
+            result1.Name = "result1";
+            result1.Size = new Size(613, 216);
+            result1.TabIndex = 4;
             // 
             // tableLayoutPanel1
             // 
@@ -336,14 +371,18 @@
             AutoScaleMode = AutoScaleMode.Font;
             Controls.Add(tlp_Server);
             Name = "Server";
-            Size = new Size(625, 677);
+            Size = new Size(625, 950);
             tlp_Server.ResumeLayout(false);
             gb_ServerName.ResumeLayout(false);
             tlp_ServerInfo.ResumeLayout(false);
             tlp_ServerInfo.PerformLayout();
             panel1.ResumeLayout(false);
             gb_ProcedureContent.ResumeLayout(false);
-            gb_ProcedureContent.PerformLayout();
+            splitContainer1.Panel1.ResumeLayout(false);
+            splitContainer1.Panel1.PerformLayout();
+            splitContainer1.Panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)splitContainer1).EndInit();
+            splitContainer1.ResumeLayout(false);
             tableLayoutPanel1.ResumeLayout(false);
             ResumeLayout(false);
         }
@@ -372,5 +411,7 @@
         private ComboBox cb_BackupList;
         private Label label6;
         private Button btn_RefreshBackupList;
+        private Result result1;
+        private SplitContainer splitContainer1;
     }
 }

@@ -85,7 +85,7 @@ namespace ProcedureManager
         {
             if (_SqlCommand != null)
             {
-                SQLResult sqlResult = ExecuteQuery(_queryManager.SelectProcedureList(filterText));
+                SQLResult sqlResult = ExecuteQuery(_queryManager.SelectProcedureList(filterText), ResultType.DATA_TABLE);
                 return sqlResult.result;
             }
             else
@@ -124,7 +124,7 @@ namespace ProcedureManager
         {
             if (_SqlCommand != null)
             {
-                SQLResult sqlResult = ExecuteQuery(_queryManager.SelectBackupList(procedureName));
+                SQLResult sqlResult = ExecuteQuery(_queryManager.SelectBackupList(procedureName), ResultType.DATA_TABLE);
                 return sqlResult.result;
             }
             else
@@ -180,6 +180,12 @@ namespace ProcedureManager
                 return string.Empty;
         }
 
+        public Tuple<DataSet?, string> ExecuteQueryGetDataSet(string query)
+        {
+            SQLResult sqlResult = ExecuteQuery(query);
+            return new Tuple<DataSet?, string>(sqlResult.result, sqlResult.errorMessage);
+        }
+
         private bool CheckDatabaseInfo()
         {
             return !string.IsNullOrEmpty(_DbAddress) && !string.IsNullOrEmpty(_DbName) && !string.IsNullOrEmpty(_DbId) && !string.IsNullOrEmpty(_DbPw);
@@ -206,30 +212,12 @@ namespace ProcedureManager
                     DataSet ds = new DataSet();
                     sd.Fill(ds, "Result");
 
-                    if (ds != null)
-                    {
-                        if (resultType == ResultType.DATA_SET)
-                        {
-                            sqlResult.result = ds;
-                            return sqlResult;
-                        }
-                        else
-                        {
-                            if (ds.Tables.Count > 0)
-                            {
-                                if (resultType == ResultType.DATA_TABLE)
-                                {
-                                    sqlResult.result = ds.Tables[0];
-                                    return sqlResult;
-                                }
-                                else if (ds.Tables[0].Rows.Count > 0)
-                                {
-                                    sqlResult.result = ds.Tables[0].Rows[0].GetValueToString(0);
-                                    return sqlResult;
-                                }
-                            }
-                        }
-                    }
+                    if (resultType == ResultType.DATA_SET)
+                        sqlResult.result = ds;
+                    else if (resultType == ResultType.DATA_TABLE)
+                        sqlResult.result = ds != null && ds.Tables.Count > 0 ? ds.Tables[0] : null;
+                    else
+                        sqlResult.result = ds != null && ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0 ? ds.Tables[0].Rows[0][0].ToString() : null;
                 }
 
                 return sqlResult;
