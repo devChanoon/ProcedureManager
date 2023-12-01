@@ -53,6 +53,7 @@
             btn_ExecThisServer = new Button();
             cb_BackupList = new ComboBox();
             btn_RefreshBackupList = new Button();
+            pnl_Status = new Panel();
             tlp_Server.SuspendLayout();
             gb_ServerName.SuspendLayout();
             tlp_ServerInfo.SuspendLayout();
@@ -246,6 +247,7 @@
             splitContainer1.Size = new Size(613, 753);
             splitContainer1.SplitterDistance = 533;
             splitContainer1.TabIndex = 5;
+            splitContainer1.TabStop = false;
             splitContainer1.SplitterMoved += splitContainer1_SplitterMoved;
             // 
             // tb_ProcedureContent
@@ -259,6 +261,7 @@
             tb_ProcedureContent.Size = new Size(613, 533);
             tb_ProcedureContent.TabIndex = 0;
             tb_ProcedureContent.TabStop = false;
+            tb_ProcedureContent.TextChanged += tb_ProcedureContent_TextChanged;
             // 
             // result1
             // 
@@ -267,22 +270,25 @@
             result1.Name = "result1";
             result1.Size = new Size(613, 216);
             result1.TabIndex = 4;
+            result1.TabStop = false;
             // 
             // tableLayoutPanel1
             // 
-            tableLayoutPanel1.ColumnCount = 6;
+            tableLayoutPanel1.ColumnCount = 7;
             tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 70F));
             tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30F));
             tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30F));
             tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 70F));
             tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 30F));
             tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40F));
+            tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 30F));
             tableLayoutPanel1.Controls.Add(label6, 3, 0);
             tableLayoutPanel1.Controls.Add(btn_ExecOtherServer, 2, 0);
             tableLayoutPanel1.Controls.Add(label5, 0, 0);
             tableLayoutPanel1.Controls.Add(btn_ExecThisServer, 1, 0);
             tableLayoutPanel1.Controls.Add(cb_BackupList, 5, 0);
             tableLayoutPanel1.Controls.Add(btn_RefreshBackupList, 4, 0);
+            tableLayoutPanel1.Controls.Add(pnl_Status, 6, 0);
             tableLayoutPanel1.Dock = DockStyle.Top;
             tableLayoutPanel1.Enabled = false;
             tableLayoutPanel1.Location = new Point(3, 19);
@@ -295,7 +301,7 @@
             // label6
             // 
             label6.Dock = DockStyle.Fill;
-            label6.Location = new Point(337, 0);
+            label6.Location = new Point(319, 0);
             label6.Name = "label6";
             label6.Size = new Size(64, 33);
             label6.TabIndex = 6;
@@ -305,10 +311,10 @@
             // btn_ExecOtherServer
             // 
             btn_ExecOtherServer.Dock = DockStyle.Fill;
-            btn_ExecOtherServer.Location = new Point(204, 2);
+            btn_ExecOtherServer.Location = new Point(195, 2);
             btn_ExecOtherServer.Margin = new Padding(2);
             btn_ExecOtherServer.Name = "btn_ExecOtherServer";
-            btn_ExecOtherServer.Size = new Size(128, 29);
+            btn_ExecOtherServer.Size = new Size(119, 29);
             btn_ExecOtherServer.TabIndex = 4;
             btn_ExecOtherServer.TabStop = false;
             btn_ExecOtherServer.Text = "Other Server";
@@ -331,7 +337,7 @@
             btn_ExecThisServer.Location = new Point(72, 2);
             btn_ExecThisServer.Margin = new Padding(2);
             btn_ExecThisServer.Name = "btn_ExecThisServer";
-            btn_ExecThisServer.Size = new Size(128, 29);
+            btn_ExecThisServer.Size = new Size(119, 29);
             btn_ExecThisServer.TabIndex = 1;
             btn_ExecThisServer.TabStop = false;
             btn_ExecThisServer.Text = "This Server";
@@ -343,11 +349,11 @@
             cb_BackupList.Dock = DockStyle.Fill;
             cb_BackupList.DropDownStyle = ComboBoxStyle.DropDownList;
             cb_BackupList.FormattingEnabled = true;
-            cb_BackupList.Location = new Point(434, 5);
+            cb_BackupList.Location = new Point(416, 5);
             cb_BackupList.Margin = new Padding(0, 5, 3, 3);
             cb_BackupList.MaxDropDownItems = 10;
             cb_BackupList.Name = "cb_BackupList";
-            cb_BackupList.Size = new Size(176, 23);
+            cb_BackupList.Size = new Size(162, 23);
             cb_BackupList.TabIndex = 5;
             cb_BackupList.TabStop = false;
             cb_BackupList.SelectedIndexChanged += cb_BackupList_SelectedIndexChanged;
@@ -357,13 +363,22 @@
             btn_RefreshBackupList.BackgroundImage = (Image)resources.GetObject("btn_RefreshBackupList.BackgroundImage");
             btn_RefreshBackupList.BackgroundImageLayout = ImageLayout.Zoom;
             btn_RefreshBackupList.Dock = DockStyle.Fill;
-            btn_RefreshBackupList.Location = new Point(407, 3);
+            btn_RefreshBackupList.Location = new Point(389, 3);
             btn_RefreshBackupList.Name = "btn_RefreshBackupList";
             btn_RefreshBackupList.Size = new Size(24, 27);
             btn_RefreshBackupList.TabIndex = 7;
             btn_RefreshBackupList.TabStop = false;
             btn_RefreshBackupList.UseVisualStyleBackColor = true;
             btn_RefreshBackupList.Click += btn_RefreshBackupList_Click;
+            // 
+            // pnl_Status
+            // 
+            pnl_Status.BackgroundImage = Properties.Resources.gray_circle_30;
+            pnl_Status.BackgroundImageLayout = ImageLayout.Zoom;
+            pnl_Status.Location = new Point(584, 3);
+            pnl_Status.Name = "pnl_Status";
+            pnl_Status.Size = new Size(26, 27);
+            pnl_Status.TabIndex = 8;
             // 
             // Server
             // 
@@ -403,7 +418,6 @@
         private Label label2;
         private TextBox tb_Address;
         private Panel panel1;
-        private TextBox tb_ProcedureContent;
         private Button btn_ExecThisServer;
         private TableLayoutPanel tableLayoutPanel1;
         private Button btn_ExecOtherServer;
@@ -413,5 +427,7 @@
         private Button btn_RefreshBackupList;
         private Result result1;
         private SplitContainer splitContainer1;
+        private Panel pnl_Status;
+        public TextBox tb_ProcedureContent;
     }
 }

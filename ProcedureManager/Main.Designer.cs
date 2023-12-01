@@ -159,14 +159,14 @@
             tmr_SearchProcedureName.Interval = 200;
             tmr_SearchProcedureName.Tick += tmr_SearchProcedureName_Tick;
             // 
-            // FormMain
+            // Main
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1584, 911);
             Controls.Add(tableLayoutPanel1);
             KeyPreview = true;
-            Name = "FormMain";
+            Name = "Main";
             Text = "Procedure Manager";
             WindowState = FormWindowState.Maximized;
             FormClosing += FormMain_FormClosing;

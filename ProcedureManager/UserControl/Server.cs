@@ -20,6 +20,8 @@ namespace ProcedureManager
         private SyntaxAnalyzer _SyntaxAnalyzer = new SyntaxAnalyzer();
 
         public ExecOtherServerDelegate? _ExecOtherServer;
+        public CheckContentsDelegate? _CheckContents;
+        public SearchTextChangeDelegate? _SearchTextChange;
         public bool isConnect { get { return _SqlManager != null; } }
 
         private const string INI_FOLDER_NAME = "ini_files";
@@ -148,6 +150,9 @@ namespace ProcedureManager
                     if (errorMessage != string.Empty)
                         MessageBox.Show($"Backup 테이블 생성에 실패했습니다.\r\n{errorMessage}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
+
+                if (_SearchTextChange != null)
+                    _SearchTextChange();
             }
         }
 
@@ -217,13 +222,13 @@ namespace ProcedureManager
 
                 string content = backupId == null ? _SqlManager.GetProcedureContent(procedureName) : _SqlManager.GetBackupProcedureContent(backupId);
                 if (content != string.Empty)
-                    result = ContentSplit(content);
+                    result = ContentSplit(content, backupId);
             }
 
             return result;
         }
 
-        private string ContentSplit(string text)
+        private string ContentSplit(string text, string? backupId)
         {
             string[] textArray = text.Replace("\\r\\n", "¶").Split('¶').ToArray();
             bool findCreateText = false;
@@ -247,6 +252,20 @@ namespace ProcedureManager
         {
             const string FILTER_TEXT = "CREATE";
             const string REPLACE_TEXT = "ALTER";
+
+            string trimText = text.TrimStart();
+            int trimIndex = 0;
+            foreach (char c in trimText)
+            {
+                if (c == '\t')
+                    trimIndex++;
+                else
+                    break;
+            }
+
+            trimText = trimText.Substring(trimIndex);
+            if (trimText.Length >= 2 && (trimText.Substring(0, 2) == "--" || trimText.Substring(0, 2) == "/*"))
+                return new Tuple<bool, string>(false, text);
 
             Tuple<int, string, string> result = _SyntaxAnalyzer.GetTargetSyntaxIndex(new List<string> { FILTER_TEXT }, text);
             int filterTextStartIndex = result.Item1;
@@ -296,10 +315,12 @@ namespace ProcedureManager
             if (_SqlManager == null) return;
 
             string title = $"{tb_Address.Text} > {tb_Name.Text}";
+            if (procedureContent.Substring(procedureContent.Length - 2) == "\r\n")
+                procedureContent = procedureContent.Substring(0, procedureContent.Length - 2);
+
             ProcedureList procedureList = _SyntaxAnalyzer.GetProcedureList(procedureContent);
             if (procedureList.Count > 0)
             {
-
                 bool executeSearch = false;
                 List<Tuple<string, string?>> errorList = new List<Tuple<string, string?>>();
                 for (int i = 0; i < procedureList.Count; i++)
@@ -355,6 +376,9 @@ namespace ProcedureManager
             if (_SqlManager != null)
             {
                 string prevProcedureContent = SearchProcedureContent(name);
+                if (prevProcedureContent.Length >= 2 && prevProcedureContent.Substring(prevProcedureContent.Length - 2) == "\r\n")
+                    prevProcedureContent = prevProcedureContent.Substring(0, prevProcedureContent.Length - 2);
+
                 if (prevProcedureContent != currentProcedureContent)
                 {
                     string errorMessage = _SqlManager.InsertBackupProcedureContent(name, prevProcedureContent);
@@ -436,6 +460,23 @@ namespace ProcedureManager
                 result1.btn_Close.BackgroundImage = Properties.Resources.double_down_25;
             else
                 result1.btn_Close.BackgroundImage = Properties.Resources.double_up_25;
+        }
+
+
+        public void SetLight(bool? isRed)
+        {
+            if (isRed == null)
+                pnl_Status.BackgroundImage = Properties.Resources.gray_circle_30;
+            else if (isRed.HasValue && isRed.Value)
+                pnl_Status.BackgroundImage = Properties.Resources.red_circle_30;
+            else
+                pnl_Status.BackgroundImage = Properties.Resources.green_circle_30;
+        }
+
+        private void tb_ProcedureContent_TextChanged(object sender, EventArgs e)
+        {
+            if (_CheckContents != null)
+                _CheckContents();
         }
     }
 }

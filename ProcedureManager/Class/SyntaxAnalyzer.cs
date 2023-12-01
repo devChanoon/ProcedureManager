@@ -17,18 +17,64 @@ namespace ProcedureManager
             public string beforeString = string.Empty;
             public string afterString = string.Empty;
 
-            public FindResult Find(List<string> list, string content, int findStartIndex = 0)
+            public FindResult FindTextInAllContent(List<string> list, string content, int findStartIndex = 0)
             {
                 string _content = content.Substring(findStartIndex).ToUpper();
+
+                string name = string.Empty;
+                int index = int.MaxValue;
                 foreach (string item in list)
                 {
-                    int index = _content.IndexOf(item.ToUpper());
-                    if (index > -1)
+                    int spaceIndex = _content.IndexOf($"{item.ToUpper()} ");
+                    int tabIndex = _content.IndexOf($"{item.ToUpper()}\t");
+                    int _index = -1;
+                    if (spaceIndex != -1 && tabIndex != -1)
+                        _index = spaceIndex < tabIndex ? spaceIndex : tabIndex;
+                    else if (spaceIndex != -1 || tabIndex != -1)
+                        _index = spaceIndex == -1 ? tabIndex : spaceIndex;
+
+                    if (_index != -1 && index > _index)
+                    { 
+                        index = _index;
+                        name = item;
+                    }
+                }
+
+                if (index != int.MaxValue)
+                {
+                    this.index = index;
+                    item = content.Substring(index + findStartIndex, name.Length);
+                    beforeString = content.Substring(0, index + findStartIndex);
+                    afterString = content.Substring(index + findStartIndex + name.Length);
+                }
+
+                return this;
+            }
+
+            public FindResult FindTextInFirstWord(List<string> list, string content)
+            {
+                string _content = content.TrimStart();
+                int index = content.Length - _content.Length;
+                int tabIndex = 0;
+                foreach(char c in _content)
+                {
+                    if (c == '\t')
+                        tabIndex++;
+                    else
+                        break;
+                }
+
+                index = index + tabIndex;
+                _content = _content.Substring(tabIndex);
+
+                foreach (string item in list)
+                {
+                    if (_content.Length >= item.Length && _content.Substring(0, item.Length).ToUpper() == item)
                     {
                         this.index = index;
-                        this.item = content.Substring(index + findStartIndex, item.Length);
-                        beforeString = content.Substring(0, index + findStartIndex);
-                        afterString = content.Substring(index + findStartIndex + item.Length);
+                        this.item = _content.Substring(0, item.Length);
+                        beforeString = content.Substring(0, index);
+                        afterString = content.Substring(index + item.Length);
                         break;
                     }
                 }
@@ -36,7 +82,7 @@ namespace ProcedureManager
                 return this;
             }
 
-            public FindResult FindTableName(string content)
+            public FindResult FindProcedureNameInFirstWord(string content)
             {
                 string _content = content.TrimStart();
 
@@ -61,7 +107,7 @@ namespace ProcedureManager
             ProcedureList procedureList = new ProcedureList();
 
             List<string> syntaxList = new List<string>() { "CREATE", "ALTER", "DROP" };
-            List<string> typeList = new List<string>() { "PROCEDURE", "PROC", "FUNC" };
+            List<string> typeList = new List<string>() { "PROCEDURE", "FUNCTION", "PROC" };
 
             string _content = content;
             int syntaxStartIndex = -1;
@@ -69,17 +115,19 @@ namespace ProcedureManager
 
             do
             {
-                FindResult syntax = new FindResult().Find(syntaxList, _content, findStartIndex);
+                FindResult syntax = new FindResult().FindTextInAllContent(syntaxList, _content, findStartIndex);
                 syntaxStartIndex = syntax.index;
                 if (syntax.index > -1)
                 {
-                    FindResult type = new FindResult().Find(typeList, syntax.afterString);
+                    FindResult type = new FindResult().FindTextInFirstWord(typeList, syntax.afterString);
                     if (type.index > -1)
                     {
-                        FindResult table = new FindResult().FindTableName(type.afterString);
+                        FindResult table = new FindResult().FindProcedureNameInFirstWord(type.afterString);
 
-                        if (syntax.beforeString != string.Empty)
-                        { 
+
+                        if (syntax.beforeString != string.Empty && procedureList.Count > 0 && string.IsNullOrEmpty(procedureList.GetQuery()))
+                        {
+                            
                             procedureList.SetQuery(syntax.beforeString);
                             _content = $"{syntax.item}{syntax.afterString}";
                             findStartIndex = 0;
@@ -90,6 +138,8 @@ namespace ProcedureManager
                             procedureList.AddName(table.item);
                         }
                     }
+                    else
+                        findStartIndex += syntax.index + syntax.item.Length;
                 }
             }
             while (syntaxStartIndex > -1);
@@ -148,7 +198,8 @@ namespace ProcedureManager
             string beforeSyntax = content.Substring(0, startIndex);
 
             string _content = content.Substring(startIndex + syntaxLength);
-            int spaceIndex = _content.IndexOf(' ');
+            string targetText = _content.Substring(0, 1) == "\t" ? "\t" : " ";
+            int spaceIndex = _content.IndexOf(targetText);
             string afterSyntax = _content.Substring(spaceIndex + 1).Trim();
             return new Tuple<string, string>(beforeSyntax, afterSyntax);
         }

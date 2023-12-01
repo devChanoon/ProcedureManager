@@ -7,6 +7,8 @@ namespace ProcedureManager
     public partial class Main : Form
     {
         public delegate void ExecOtherServerDelegate(string serverName, string procedureContent);
+        public delegate void CheckContentsDelegate();
+        public delegate void SearchTextChangeDelegate();
 
         private const string SERVER1_NAME = "Server1";
         private const string SERVER2_NAME = "Server2";
@@ -30,8 +32,12 @@ namespace ProcedureManager
         {
             server1.Initailize(SERVER1_NAME, CONFIG_INI_PATH);
             server1._ExecOtherServer = new ExecOtherServerDelegate(ExecOtherServer);
+            server1._CheckContents = new CheckContentsDelegate(CheckContents);
+            server1._SearchTextChange = new SearchTextChangeDelegate(searchTextChange);
             server2.Initailize(SERVER2_NAME, CONFIG_INI_PATH);
             server2._ExecOtherServer = new ExecOtherServerDelegate(ExecOtherServer);
+            server2._CheckContents = new CheckContentsDelegate(CheckContents);
+            server2._SearchTextChange = new SearchTextChangeDelegate(searchTextChange);
         }
 
         private void lv_ProcedureList_SelectedIndexChanged(object sender, EventArgs e)
@@ -122,6 +128,11 @@ namespace ProcedureManager
 
         private void tb_ProcedureName_TextChanged(object sender, EventArgs e)
         {
+            searchTextChange();
+        }
+
+        private void searchTextChange()
+        {
             _LastTextChangeTime = DateTime.Now;
             tmr_SearchProcedureName.Enabled = true;
         }
@@ -210,6 +221,10 @@ namespace ProcedureManager
                     server1.Execute(e.KeyCode == Keys.F5);
                     server2.Execute(e.KeyCode == Keys.F5);
                     break;
+
+                case Keys.F7:
+                    lv_ProcedureList.Focus();
+                    break;
             }
         }
 
@@ -239,6 +254,22 @@ namespace ProcedureManager
                     SetListViewItems(MergeTables(dataTable1, dataTable2));
                 }
             }
+        }
+
+        public void CheckContents()
+        {
+            if (server1.isConnect && server2.isConnect)
+            {
+                bool isDiffrent = server1.tb_ProcedureContent.Text != server2.tb_ProcedureContent.Text;
+                server1.SetLight(isDiffrent);
+                server2.SetLight(isDiffrent);
+            }
+            else
+            {
+                server1.SetLight(null);
+                server2.SetLight(null);
+            }
+
         }
     }
 }
