@@ -13,6 +13,7 @@ namespace ProcedureManager
     {
         private SqlConnection _SqlConnection = new SqlConnection();
         private SqlCommand? _SqlCommand = null;
+        private QueryManager _queryManager = new QueryManager();
 
         private string _DbAddress = string.Empty;
         private string _DbName = string.Empty;
@@ -80,21 +81,11 @@ namespace ProcedureManager
             }
         }
 
-        public DataTable? GetProcedureNames(string filterText)
+        public DataTable? GetProcedureList(string filterText)
         {
             if (_SqlCommand != null)
             {
-                string query = @"
-SELECT a.name as procedure_name
-     , a.type as type
-  FROM sys.objects a
-       INNER JOIN sys.sql_modules b ON a.object_id = b.object_id
- WHERE a.type_desc in ('SQL_SCALAR_FUNCTION', 'SQL_TABLE_VALUED_FUNCTION', 'SQL_STORED_PROCEDURE')
-   AND a.name like '%@PROCEDURE_NAME%'
-ORDER BY a.name
-";
-                query = query.Replace("@PROCEDURE_NAME", filterText);
-                SQLResult sqlResult = ExecuteQuery(query, ResultType.DATA_TABLE);
+                SQLResult sqlResult = ExecuteQuery(_queryManager.SelectProcedureList(filterText), ResultType.DATA_TABLE);
                 return sqlResult.result;
             }
             else
@@ -105,15 +96,7 @@ ORDER BY a.name
         {
             if (_SqlCommand != null)
             { 
-                string query = @"
-SELECT REPLACE(b.definition, char(10), '\r\n')
-  FROM sys.objects a
-       INNER JOIN sys.sql_modules b ON a.object_id = b.object_id
- WHERE a.type_desc in ('SQL_SCALAR_FUNCTION', 'SQL_TABLE_VALUED_FUNCTION', 'SQL_STORED_PROCEDURE')
-   AND a.name = '@PROCEDURE_NAME'
-";
-                query = query.Replace("@PROCEDURE_NAME", procedureName);
-                SQLResult sqlResult = ExecuteQuery(query, ResultType.STRING);
+                SQLResult sqlResult = ExecuteQuery(_queryManager.SelectProcedureContent(procedureName), ResultType.STRING);
                 if (sqlResult.result == null)
                     return string.Empty;
                 else
@@ -127,13 +110,7 @@ SELECT REPLACE(b.definition, char(10), '\r\n')
         {
             if (_SqlCommand != null)
             {
-                string query = @"
-SELECT [content]
-  FROM procedure_backup
- WHERE id = @BACKUP_ID
-";
-                query = query.Replace("@BACKUP_ID", backupId);
-                SQLResult sqlResult = ExecuteQuery(query, ResultType.STRING);
+                SQLResult sqlResult = ExecuteQuery(_queryManager.SelectBackupProcedureContent(backupId), ResultType.STRING);
                 if (sqlResult.result == null)
                     return string.Empty;
                 else
@@ -147,14 +124,7 @@ SELECT [content]
         {
             if (_SqlCommand != null)
             {
-                string query = @"
-SELECT id, CONVERT(char(23), insert_time, 21) as insert_time
-  FROM procedure_backup
- WHERE name = '@PROCEDURE_NAME'
-ORDER BY id desc
-";
-                query = query.Replace("@PROCEDURE_NAME", procedureName);
-                SQLResult sqlResult = ExecuteQuery(query, ResultType.DATA_TABLE);
+                SQLResult sqlResult = ExecuteQuery(_queryManager.SelectBackupList(procedureName), ResultType.DATA_TABLE);
                 return sqlResult.result;
             }
             else
@@ -165,17 +135,7 @@ ORDER BY id desc
         {
             if (_SqlCommand != null)
             {
-                string query = @"
-IF EXISTS (select * from sys.tables where name = 'procedure_backup')
-BEGIN 
-	SELECT 'Y'
-END
-ELSE
-BEGIN
-	SELECT 'N'
-END
-";
-                SQLResult sqlResult = ExecuteQuery(query, ResultType.STRING);
+                SQLResult sqlResult = ExecuteQuery(_queryManager.SelectExistBackupTable(), ResultType.STRING);
                 return sqlResult.result != null && sqlResult.result == "Y";
             }
             else
@@ -186,29 +146,14 @@ END
         {
             if (_SqlCommand != null)
             {
-                string query = @"
-SET ANSI_NULLS ON
-
-SET QUOTED_IDENTIFIER ON
-
-CREATE TABLE [dbo].[procedure_backup](
-	[name] [nvarchar](50) NULL,
-	[id] [int] IDENTITY(1,1) NOT NULL,
-	[type] [varchar](3) NULL,
-	[content] [nvarchar](max) NULL,
-	[insert_time] [datetime] NULL
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-
-ALTER TABLE [dbo].[procedure_backup] ADD  CONSTRAINT [DF_procedure_backup_insert_time]  DEFAULT (getdate()) FOR [insert_time]
-";
-                SQLResult sqlResult = ExecuteQuery(query);
+                SQLResult sqlResult = ExecuteQuery(_queryManager.CreateBackupTable());
                 return sqlResult.errorMessage;
             }
             else
                 return "DB에 연결되지 않았습니다.";
         }
 
-        public string InsertBackupProcedureContent(string name, string type, string procedureContent)
+        public string InsertBackupProcedureContent(string name, string procedureContent)
         {
             if (_SqlCommand != null)
             {
@@ -217,26 +162,28 @@ ALTER TABLE [dbo].[procedure_backup] ADD  CONSTRAINT [DF_procedure_backup_insert
                 {   
                     stringBuilder.AppendLine(content.Replace("'", "''"));
                 }
-
-                string query = @"
-INSERT INTO procedure_backup (name, type, [content])
-VALUES ('@PROCEDURE_NAME', '@TYPE', '@PROCEDURE_CONTENT')
-";
-                query = query.Replace("@PROCEDURE_NAME", name);
-                query = query.Replace("@TYPE", type);
-                query = query.Replace("@PROCEDURE_CONTENT", stringBuilder.ToString());
-
-                SQLResult sqlResult = ExecuteQuery(query);
+                
+                SQLResult sqlResult = ExecuteQuery(_queryManager.InsertBackupProcedureContent(name, stringBuilder.ToString()));
                 return sqlResult.errorMessage;
             }
             else
                 return "DB에 연결되지 않았습니다.";
         }
 
-        public string SetProcedureContent(string procedureContent)
+        public string SetProcedureContent(string? procedureContent)
         {
-            SQLResult sqlResult = ExecuteQuery(procedureContent);
-            return sqlResult.errorMessage;
+            if (procedureContent != null) { 
+                SQLResult sqlResult = ExecuteQuery(procedureContent);
+                return sqlResult.errorMessage;
+            }
+            else
+                return string.Empty;
+        }
+
+        public Tuple<DataSet?, string> ExecuteQueryGetDataSet(string query)
+        {
+            SQLResult sqlResult = ExecuteQuery(query);
+            return new Tuple<DataSet?, string>(sqlResult.result, sqlResult.errorMessage);
         }
 
         private bool CheckDatabaseInfo()
@@ -265,30 +212,12 @@ VALUES ('@PROCEDURE_NAME', '@TYPE', '@PROCEDURE_CONTENT')
                     DataSet ds = new DataSet();
                     sd.Fill(ds, "Result");
 
-                    if (ds != null)
-                    {
-                        if (resultType == ResultType.DATA_SET)
-                        {
-                            sqlResult.result = ds;
-                            return sqlResult;
-                        }
-                        else
-                        {
-                            if (ds.Tables.Count > 0)
-                            {
-                                if (resultType == ResultType.DATA_TABLE)
-                                {
-                                    sqlResult.result = ds.Tables[0];
-                                    return sqlResult;
-                                }
-                                else if (ds.Tables[0].Rows.Count > 0)
-                                {
-                                    sqlResult.result = ds.Tables[0].Rows[0][0].ToString();
-                                    return sqlResult;
-                                }
-                            }
-                        }
-                    }
+                    if (resultType == ResultType.DATA_SET)
+                        sqlResult.result = ds;
+                    else if (resultType == ResultType.DATA_TABLE)
+                        sqlResult.result = ds != null && ds.Tables.Count > 0 ? ds.Tables[0] : null;
+                    else
+                        sqlResult.result = ds != null && ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0 ? ds.Tables[0].Rows[0][0].ToString() : null;
                 }
 
                 return sqlResult;

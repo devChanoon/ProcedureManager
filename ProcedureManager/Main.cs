@@ -4,9 +4,11 @@ using System.Linq;
 
 namespace ProcedureManager
 {
-    public partial class FormMain : Form
+    public partial class Main : Form
     {
         public delegate void ExecOtherServerDelegate(string serverName, string procedureContent);
+        public delegate void CheckContentsDelegate();
+        public delegate void SearchTextChangeDelegate();
 
         private const string SERVER1_NAME = "Server1";
         private const string SERVER2_NAME = "Server2";
@@ -14,10 +16,9 @@ namespace ProcedureManager
 
         private readonly string CONFIG_INI_PATH = Path.Combine(Application.StartupPath, INI_FOLDER_NAME, "Config.ini");
 
-        private string _WinMergePath = @"C:\Program Files\WinMerge\WinMergeU.exe";
         private DateTime? _LastTextChangeTime = null;
 
-        public FormMain()
+        public Main()
         {
             InitializeComponent();
         }
@@ -31,8 +32,12 @@ namespace ProcedureManager
         {
             server1.Initailize(SERVER1_NAME, CONFIG_INI_PATH);
             server1._ExecOtherServer = new ExecOtherServerDelegate(ExecOtherServer);
+            server1._CheckContents = new CheckContentsDelegate(CheckContents);
+            server1._SearchTextChange = new SearchTextChangeDelegate(searchTextChange);
             server2.Initailize(SERVER2_NAME, CONFIG_INI_PATH);
             server2._ExecOtherServer = new ExecOtherServerDelegate(ExecOtherServer);
+            server2._CheckContents = new CheckContentsDelegate(CheckContents);
+            server2._SearchTextChange = new SearchTextChangeDelegate(searchTextChange);
         }
 
         private void lv_ProcedureList_SelectedIndexChanged(object sender, EventArgs e)
@@ -40,13 +45,12 @@ namespace ProcedureManager
             if (lv_ProcedureList.SelectedItems.Count > 0)
             {
                 string? procedureName = lv_ProcedureList.SelectedItems[0].SubItems[0].Text.Trim();
-                string? type = lv_ProcedureList.SelectedItems[0].SubItems[1].Text.Trim();
-                server1.Search(procedureName, type);
-                server2.Search(procedureName, type);
+                server1.Search(procedureName);
+                server2.Search(procedureName);
             }
         }
 
-        private void btn_OpenWinmerge_Click(object sender, EventArgs e)
+        private void btn_OpenWinmerge_Click(object? sender, EventArgs? e)
         {
             string path1 = server1.SaveProcedure();
             string path2 = server2.SaveProcedure();
@@ -108,9 +112,7 @@ namespace ProcedureManager
                 return;
             }
 
-            string? procedureName = lv_ProcedureList.SelectedItems[0].SubItems[0].Text.Trim();
-            string? type = lv_ProcedureList.SelectedItems[0].SubItems[1].Text.Trim();
-            otherServer.ExecuteProcedure(procedureName, type, procedureContent);
+            otherServer.ExecuteProcedure(procedureContent);
         }
 
         private void btn_WinMergeSetting_Click(object sender, EventArgs e)
@@ -120,11 +122,16 @@ namespace ProcedureManager
 
         private void ShowWinMergePathSetting()
         {
-            FormWinmergePathSetting formWinmergePathSetting = new FormWinmergePathSetting(CONFIG_INI_PATH);
+            WinmergePathSetting formWinmergePathSetting = new WinmergePathSetting(CONFIG_INI_PATH);
             formWinmergePathSetting.ShowDialog();
         }
 
         private void tb_ProcedureName_TextChanged(object sender, EventArgs e)
+        {
+            searchTextChange();
+        }
+
+        private void searchTextChange()
         {
             _LastTextChangeTime = DateTime.Now;
             tmr_SearchProcedureName.Enabled = true;
@@ -141,8 +148,8 @@ namespace ProcedureManager
                 List<Tuple<string, string>> procedureNameList = DataTableToListString(table1);
                 foreach (DataRow dataRow in table2.Rows)
                 {
-                    string procedureName = dataRow[0].ToString();
-                    string type = dataRow[1].ToString();
+                    string procedureName = dataRow.GetValueToString(0);
+                    string type = dataRow.GetValueToString(1);
                     Tuple<string, string> procedure = new Tuple<string, string>(procedureName, type);
                     if (!procedureNameList.Contains(procedure))
                         procedureNameList.Add(procedure);
@@ -152,12 +159,15 @@ namespace ProcedureManager
             }
         }
 
-        private List<Tuple<string, string>> DataTableToListString(DataTable dataTable)
+        private List<Tuple<string, string>> DataTableToListString(DataTable? dataTable)
         {
             List<Tuple<string, string>> list = new List<Tuple<string, string>>();
+            if (dataTable == null)
+                return list;
+
             foreach (DataRow row in dataTable.Rows)
             {
-                list.Add(new Tuple<string, string>(row[0].ToString(), row[1].ToString()));
+                list.Add(new Tuple<string, string>(row.GetValueToString(0), row.GetValueToString(1)));
             }
 
             return list;
@@ -170,7 +180,7 @@ namespace ProcedureManager
             {
                 foreach (Tuple<string, string> item in itemList)
                 {
-                    if (item.Item1.Trim() != string.Empty)
+                    if (item.Item1 != null && item.Item1.Trim() != string.Empty)
                     {
                         ListViewItem listViewItem = new ListViewItem(item.Item1);
                         listViewItem.SubItems.Add(item.Item2);
@@ -194,13 +204,26 @@ namespace ProcedureManager
                     break;
 
                 case Keys.F3:
-                    if (!server1.isConnect)
-                        server1.btn_Connect_Click(null, null);
+                case Keys.F4:
+                    bool isServer1 = e.KeyCode == Keys.F3;
+                    Server server = isServer1 ? server1 : server2;
+                    if (!server.isConnect)
+                        server.btn_Connect_Click(null, null);
+                    else
+                    {
+                        server1.SelectServer(isServer1);
+                        server2.SelectServer(!isServer1);
+                    }
                     break;
 
-                case Keys.F4:
-                    if (!server2.isConnect)
-                        server2.btn_Connect_Click(null, null);
+                case Keys.F5:
+                case Keys.F6:
+                    server1.Execute(e.KeyCode == Keys.F5);
+                    server2.Execute(e.KeyCode == Keys.F5);
+                    break;
+
+                case Keys.F7:
+                    lv_ProcedureList.Focus();
                     break;
             }
         }
@@ -210,6 +233,9 @@ namespace ProcedureManager
             if (e.KeyCode == Keys.Enter)
             {
                 lv_ProcedureList.Focus();
+                lv_ProcedureList.SelectedItems.Clear();
+                lv_ProcedureList.SelectedIndices.Clear();
+
                 if (lv_ProcedureList.Items.Count > 0)
                     lv_ProcedureList.Items[0].Selected = true;
             }
@@ -228,6 +254,22 @@ namespace ProcedureManager
                     SetListViewItems(MergeTables(dataTable1, dataTable2));
                 }
             }
+        }
+
+        public void CheckContents()
+        {
+            if (server1.isConnect && server2.isConnect)
+            {
+                bool isDiffrent = server1.tb_ProcedureContent.Text != server2.tb_ProcedureContent.Text;
+                server1.SetLight(isDiffrent);
+                server2.SetLight(isDiffrent);
+            }
+            else
+            {
+                server1.SetLight(null);
+                server2.SetLight(null);
+            }
+
         }
     }
 }
