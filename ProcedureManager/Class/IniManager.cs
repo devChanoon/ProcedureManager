@@ -5,12 +5,10 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ProcedureComparer
+namespace ProcedureManager
 {
     public class IniManager
     {
-
-
         // ---- ini 파일 의 읽고 쓰기를 위한 API 함수 선언 ----
         [DllImport("kernel32.dll")]
         private static extern int GetPrivateProfileString(    // ini Read 함수

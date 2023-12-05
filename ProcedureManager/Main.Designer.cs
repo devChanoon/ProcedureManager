@@ -1,6 +1,6 @@
-﻿namespace ProcedureComparer
+﻿namespace ProcedureManager
 {
-    partial class FormMain
+    partial class Main
     {
         /// <summary>
         ///  Required designer variable.
@@ -29,7 +29,7 @@
         private void InitializeComponent()
         {
             components = new System.ComponentModel.Container();
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FormMain));
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Main));
             tableLayoutPanel1 = new TableLayoutPanel();
             server2 = new Server();
             btn_OpenWinmerge = new Button();
@@ -63,17 +63,18 @@
             tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 106F));
             tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
             tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            tableLayoutPanel1.Size = new Size(1264, 911);
+            tableLayoutPanel1.Size = new Size(1584, 911);
             tableLayoutPanel1.TabIndex = 0;
             // 
             // server2
             // 
             server2.Dock = DockStyle.Fill;
-            server2.Location = new Point(760, 3);
+            server2.Location = new Point(920, 3);
             server2.Name = "server2";
             tableLayoutPanel1.SetRowSpan(server2, 3);
-            server2.Size = new Size(501, 905);
+            server2.Size = new Size(661, 905);
             server2.TabIndex = 7;
+            server2.TabStop = false;
             // 
             // btn_OpenWinmerge
             // 
@@ -86,7 +87,8 @@
             btn_OpenWinmerge.Name = "btn_OpenWinmerge";
             btn_OpenWinmerge.Size = new Size(194, 100);
             btn_OpenWinmerge.TabIndex = 2;
-            btn_OpenWinmerge.Text = "Open WinMerge\r\n(F5)\r\n";
+            btn_OpenWinmerge.TabStop = false;
+            btn_OpenWinmerge.Text = "Open WinMerge\r\n(F1)\r\n";
             btn_OpenWinmerge.TextImageRelation = TextImageRelation.ImageBeforeText;
             btn_OpenWinmerge.UseVisualStyleBackColor = true;
             btn_OpenWinmerge.Click += btn_OpenWinmerge_Click;
@@ -101,6 +103,7 @@
             lv_ProcedureList.Name = "lv_ProcedureList";
             lv_ProcedureList.Size = new Size(244, 769);
             lv_ProcedureList.TabIndex = 3;
+            lv_ProcedureList.TabStop = false;
             lv_ProcedureList.UseCompatibleStateImageBehavior = false;
             lv_ProcedureList.View = View.Details;
             lv_ProcedureList.SelectedIndexChanged += lv_ProcedureList_SelectedIndexChanged;
@@ -124,6 +127,7 @@
             btn_WinMergeSetting.Name = "btn_WinMergeSetting";
             btn_WinMergeSetting.Size = new Size(44, 100);
             btn_WinMergeSetting.TabIndex = 4;
+            btn_WinMergeSetting.TabStop = false;
             btn_WinMergeSetting.UseVisualStyleBackColor = true;
             btn_WinMergeSetting.Click += btn_WinMergeSetting_Click;
             // 
@@ -133,9 +137,10 @@
             tb_ProcedureName.Dock = DockStyle.Fill;
             tb_ProcedureName.Location = new Point(3, 109);
             tb_ProcedureName.Name = "tb_ProcedureName";
-            tb_ProcedureName.PlaceholderText = "(F6) Input Procedure Name And Press Enter";
+            tb_ProcedureName.PlaceholderText = "(F2) Input Procedure Name And Press Enter";
             tb_ProcedureName.Size = new Size(244, 23);
             tb_ProcedureName.TabIndex = 5;
+            tb_ProcedureName.TabStop = false;
             tb_ProcedureName.TextChanged += tb_ProcedureName_TextChanged;
             tb_ProcedureName.KeyUp += tb_ProcedureName_KeyUp;
             // 
@@ -145,23 +150,24 @@
             server1.Location = new Point(253, 3);
             server1.Name = "server1";
             tableLayoutPanel1.SetRowSpan(server1, 3);
-            server1.Size = new Size(501, 905);
+            server1.Size = new Size(661, 905);
             server1.TabIndex = 6;
+            server1.TabStop = false;
             // 
             // tmr_SearchProcedureName
             // 
             tmr_SearchProcedureName.Interval = 200;
             tmr_SearchProcedureName.Tick += tmr_SearchProcedureName_Tick;
             // 
-            // FormMain
+            // Main
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1264, 911);
+            ClientSize = new Size(1584, 911);
             Controls.Add(tableLayoutPanel1);
             KeyPreview = true;
-            Name = "FormMain";
-            Text = "Procedure Comparer";
+            Name = "Main";
+            Text = "Procedure Manager";
             WindowState = FormWindowState.Maximized;
             FormClosing += FormMain_FormClosing;
             Load += FormMain_Load;

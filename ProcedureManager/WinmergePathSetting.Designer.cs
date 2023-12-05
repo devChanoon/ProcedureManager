@@ -1,6 +1,6 @@
-﻿namespace ProcedureComparer
+﻿namespace ProcedureManager
 {
-    partial class FormWinmergePathSetting
+    partial class WinmergePathSetting
     {
         /// <summary>
         /// Required designer variable.
